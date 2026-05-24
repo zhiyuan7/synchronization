@@ -1,0 +1,20 @@
+# 平移量单位: mm
+# 底盘yaw转轴点 到 云台pitch转轴点 平移距离
+yaw2pitch: [0, 0, 132]
+
+# 云台pitch转轴点 到 最后一组摩擦轮(发弹轨迹中心轴) 平移距离
+pitch2fire: [55.91, 0, 3.20]
+
+# 最后一组摩擦轮 到 相机光心 平移距离
+fire2camera: [37.2, 0, 94.3]
+
+# 如果用弧度表示数字会很小不好调
+# 单位: deg
+# 顺序: yaw pitch roll
+# /pos.pose_results[:].world.z
+# 远大近小: pitch++       远小近大: pitch--
+# 左大右小: roll--        左小右大: roll++
+euler_offset: [0, 2.0, -1.6]
+
+# TF时间戳偏移量，单位: ms
+stamp_offset_ms: 32
