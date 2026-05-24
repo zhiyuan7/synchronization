@@ -17,4 +17,4 @@ fire2camera: [37.2, 0, 94.3]
 euler_offset: [0, 2.0, -1.6]
 
 # TF时间戳偏移量，单位: ms
-stamp_offset_ms: 32
+stamp_offset_ms: 0
