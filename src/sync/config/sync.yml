@@ -1,0 +1,27 @@
+# sync 包 — 相机-IMU 时域互相关时延标定参数
+
+# 收集时长 (秒): 达到此时长后自动触发估计
+collect_seconds: 25.0
+
+# 重采样频率 (Hz): 两路信号统一插值到该频率网格
+resample_hz: 1000.0
+
+# 时延搜索半宽 (ms): 只在 [-max_offset_ms, +max_offset_ms] 内找峰
+# 当前手调值 stamp_offset_ms=35，设 100 已足够余量
+max_offset_ms: 50.0
+
+# 是否在相关前去除线性趋势 (建议 true)
+detrend: true
+
+# 最少有效采样点数 (公共时间网格上的点数低于此值时拒绝估计)
+min_samples: 200
+
+# 插值方法: 将非均匀采样信号重采样到公共网格时使用的插值算法
+#   zero_order   — 零阶保持（ZOH），直接取前驱采样值，无插值失真
+#   linear       — 分段线性插值，简单快速，C⁰连续（默认）
+#   cubic_spline — 自然三次样条，C²连续，全局平滑，信号极平滑时效果最佳
+#   hermite      — 分段三次 Hermite（PCHIP），保持单调性、无过冲，推荐用于传感器数据
+interp_method: linear
+
+# 相机内参文件路径 (不设置则自动使用 pos 包的 cam_param.yml)
+# cam_param_path: "/path/to/custom/cam_param.yml"
