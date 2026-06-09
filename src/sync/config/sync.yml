@@ -4,10 +4,9 @@
 collect_seconds: 25.0
 
 # 重采样频率 (Hz): 两路信号统一插值到该频率网格
-resample_hz: 1000.0
+resample_hz: 50.0
 
 # 时延搜索半宽 (ms): 只在 [-max_offset_ms, +max_offset_ms] 内找峰
-# 当前手调值 stamp_offset_ms=35，设 100 已足够余量
 max_offset_ms: 50.0
 
 # 是否在相关前去除线性趋势 (建议 true)
@@ -23,5 +22,15 @@ min_samples: 200
 #   hermite      — 分段三次 Hermite（PCHIP），保持单调性、无过冲，推荐用于传感器数据
 interp_method: linear
 
-# 相机内参文件路径 (不设置则自动使用 pos 包的 cam_param.yml)
-# cam_param_path: "/path/to/custom/cam_param.yml"
+# 估计算法选择:
+#   time_domain  — 时域互相关峰值搜索（默认，整数精度）
+#   freq_phase   — 频域互功率谱相位斜率拟合（连续精度，需要充足的频段信噪比）
+algo_method: freq_phase
+
+# 频域方法是否在 FFT 前对信号加汉宁窗 (建议 true，抑制谱泄漏)
+apply_window: true
+
+# 频域拟合使用的最高物理频率上限 [Hz]
+#   0.0  — 不限制，使用全部正频点（DC 和 Nyquist 除外）
+#   例：5.0 — 只用 0~5 Hz 的频点做相位斜率拟合（低频段信噪比通常更高）
+max_fit_hz: 2.0

@@ -43,8 +43,8 @@ private:
     bool   detrend_;
     int    min_samples_;
 
-    // --- 算法实现（多态，当前为时域计算）---
-    std::unique_ptr<SyncCalcBase> calc_;
+    // --- 算法实现（SyncManager 注入具体的 CoreAlgoBase）---
+    std::unique_ptr<SyncManager> calc_;
 
     bool estimated_ = false;  ///< 首次估计完成后防止重复执行
 };

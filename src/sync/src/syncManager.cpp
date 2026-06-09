@@ -8,18 +8,18 @@
 #include <memory>
 
 // ---------------------------------------------------------------------------
-// 时域估计 构造函数
+// SyncManager 构造函数
 // ---------------------------------------------------------------------------
 
-时域估计::时域估计(InterpMethod method)
-    : interp_(makeInterpolator(method))
+SyncManager::SyncManager(std::unique_ptr<CoreAlgoBase> algo, InterpMethod method)
+    : algo_(std::move(algo)), interp_(makeInterpolator(method))
 {}
 
 // ---------------------------------------------------------------------------
-// 时域估计::estimate 实现
+// SyncManager::estimate
 // ---------------------------------------------------------------------------
 
-SyncResult 时域估计::estimate(
+SyncResult SyncManager::estimate(
     const std::vector<double>& t_x,
     const std::vector<double>& x_val,
     const std::vector<double>& t_y,
@@ -64,9 +64,8 @@ SyncResult 时域估计::estimate(
     std::vector<double> xn = interp_->interp(t_x, x_val, t_grid);
     std::vector<double> yn = interp_->interp(t_y, y_val, t_grid);
 
-    // --- 4. 委托 TimeDomainCalc 执行预处理、互相关与峰值搜索 ---
-    TimeDomainCalc algo;
-    CoreResult core = algo.compute(xn, yn, N, resample_hz, max_offset_ms, detrend);
+    // --- 4. 委托注入的算法核心执行实际计算 ---
+    CoreResult core = algo_->compute(xn, yn, N, resample_hz, max_offset_ms, detrend);
     if (!core.valid) {
         res.message = core.message;
         return res;
@@ -75,13 +74,15 @@ SyncResult 时域估计::estimate(
     // --- 5. 计算时延 ---
     // 推导：x[n] = y[n−k₀]  →  R_xy 在 m̂ = −k₀ 处取最大值
     //       τ̂ = −m̂·Ts（正值表示相机滞后于 IMU）
-    double tau_ms = -core.m_hat * (1000.0 / resample_hz);
+    double tau_ms = -core.tau * 1000.0;
 
-    res.tau_ms      = tau_ms;
-    res.peak_value  = core.peak_value;
-    res.peak_ratio  = core.peak_ratio;
-    res.num_samples = N;
-    res.valid       = true;
-    res.message     = "ok";
+    res.tau_ms        = tau_ms;
+    res.peak_value    = core.peak_value;
+    res.peak_ratio    = core.peak_ratio;
+    res.num_samples   = N;
+    res.fit_r2        = core.fit_r2;
+    res.num_freq_used = core.num_freq_used;
+    res.valid         = true;
+    res.message       = core.message;
     return res;
 }

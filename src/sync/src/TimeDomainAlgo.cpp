@@ -106,10 +106,10 @@ CoreResult TimeDomainCalc::compute(
     }
     double rms_side = (cnt_side > 0) ? std::sqrt(sq_side / cnt_side) : 1.0;
 
-    res.m_hat      = peak_idx - M;
-    res.peak_value = xcorr[peak_idx];
-    res.peak_ratio = (rms_side > 1e-12) ? peak_abs / rms_side : 0.0;
-    res.valid      = true;
-    res.message    = "ok";
+    res.tau          = (double)(peak_idx - M) / resample_hz;
+    res.peak_value   = xcorr[peak_idx];
+    res.peak_ratio   = (rms_side > 1e-12) ? peak_abs / rms_side : 0.0;
+    res.valid        = true;
+    res.message      = "ok";
     return res;
 }

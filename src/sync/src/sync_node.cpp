@@ -1,5 +1,7 @@
 #include "sync/sync_node.hpp"
 #include "sync/interpolator.hpp"
+#include "sync/TimeDomainAlgo.hpp"
+#include "sync/FreqDomainAlgo.hpp"
 
 #include <chrono>
 #include <memory>
@@ -20,9 +22,18 @@ SyncNode::SyncNode(const rclcpp::NodeOptions & options)
     min_samples_     = declare_parameter<int>("min_samples", 200);
     std::string interp_str = declare_parameter<std::string>("interp_method", "linear");
     InterpMethod interp_method = interpMethodFromString(interp_str);
+    std::string algo_str  = declare_parameter<std::string>("algo_method", "time_domain");
+    bool   apply_window   = declare_parameter<bool>("apply_window", true);
+    double max_fit_hz     = declare_parameter<double>("max_fit_hz", 0.0);
 
-    // ---- 算法实例（时域计算）----
-    calc_ = std::make_unique<时域估计>(interp_method);
+    // ---- 算法实例（向 SyncManager 注入对应的算法核心）----
+    if (algo_str == "freq_phase") {
+        calc_ = std::make_unique<SyncManager>(
+            std::make_unique<FreqDomainCalc>(apply_window, max_fit_hz), interp_method);
+    } else {
+        calc_ = std::make_unique<SyncManager>(
+            std::make_unique<TimeDomainCalc>(), interp_method);
+    }
 
     // ---- 订阅者 ----
     // /pos：已由 pos_node 完成 PnP 求解，camera.y 为水平坐标
@@ -138,6 +149,11 @@ void SyncNode::runEstimation()
     RCLCPP_INFO(get_logger(), "  Peak sharpness ratio: %.2f  (>3 is reliable)",
         res.peak_ratio);
     RCLCPP_INFO(get_logger(), "  Samples on grid:      %d", res.num_samples);
+    if (res.num_freq_used > 0) {
+        RCLCPP_INFO(get_logger(), "  Phase fit R2:         %.4f  (1.0 = perfect line)",
+            res.fit_r2);
+        RCLCPP_INFO(get_logger(), "  Freq points used:     %d", res.num_freq_used);
+    }
     RCLCPP_INFO(get_logger(), "  Camera samples raw:   %zu", t_cam_.size());
     RCLCPP_INFO(get_logger(), "  IMU samples raw:      %zu", t_imu_.size());
     RCLCPP_INFO(get_logger(), "--");
@@ -146,7 +162,7 @@ void SyncNode::runEstimation()
         suggested_ms);
     RCLCPP_INFO(get_logger(),
         "  Note: positive = camera lags IMU (typical USB camera case).");
-    if (res.peak_ratio < 3.0) {
+    if (res.num_freq_used == 0 && res.peak_ratio < 3.0) {
         RCLCPP_WARN(get_logger(),
             "  [!] Low sharpness (%.2f < 3). Ensure sufficient gimbal motion "
             "during recording, and check that target stays in frame.", res.peak_ratio);

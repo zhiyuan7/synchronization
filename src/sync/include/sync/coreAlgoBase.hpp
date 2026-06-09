@@ -7,10 +7,12 @@
 // 核心算法计算结果
 // ---------------------------------------------------------------------------
 struct CoreResult {
-    int    m_hat      = 0;    ///< 互相关峰值对应的延迟采样数 m̂
-    double peak_value = 0.0;  ///< 互相关峰值（有符号）
-    double peak_ratio = 0.0;  ///< |峰值| / 旁瓣均方根，衡量峰值锐利度
-    bool   valid      = false;
+    double tau           = 0.0;  ///< 延时估计 [s]，= m_hat/hz（时域）或 slope/hz（频域）；tau_ms = -tau*1000
+    double peak_value    = 0.0;  ///< 【时域专用】互相关峰值（有符号）
+    double peak_ratio    = 0.0;  ///< 【时域专用】|峰值| / 旁瓣均方根
+    double fit_r2        = 0.0;  ///< 【频域专用】相位拟合优度 R²
+    int    num_freq_used = 0;    ///< 【频域专用】参与拟合的频点数
+    bool   valid         = false;
     std::string message;
 };
 
