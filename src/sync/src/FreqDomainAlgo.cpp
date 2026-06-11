@@ -52,8 +52,11 @@ static void applyHann(std::vector<double>& v) {
 // FreqDomainCalc 构造函数
 // ---------------------------------------------------------------------------
 
-FreqDomainCalc::FreqDomainCalc(bool apply_window, double max_fit_hz)
-    : apply_window_(apply_window), max_fit_hz_(max_fit_hz)
+FreqDomainCalc::FreqDomainCalc(bool apply_window, double max_fit_hz,
+                               const std::string& freq_fit_mode, int fixed_bins_count)
+    : apply_window_(apply_window), max_fit_hz_(max_fit_hz),
+      use_fixed_bins_(freq_fit_mode == "fixed_bins"),
+      fixed_bins_count_(fixed_bins_count)
 {}
 
 // ---------------------------------------------------------------------------
@@ -133,14 +136,20 @@ CoreResult FreqDomainCalc::compute(
     }
 
     // --- 7. 最小二乘拟合 φ[k] ≈ a·ω_k + b（cv::solve + DECOMP_SVD） ---
-    // 按 max_fit_hz_ 截断：f_k = k·resample_hz/L，最大有效 k 满足 f_k ≤ max_fit_hz_
-    int K_fit = K;
-    if (max_fit_hz_ > 0.0) {
-        int k_max = static_cast<int>(max_fit_hz_ * static_cast<double>(L) / resample_hz);
-        K_fit = std::min(k_max, K);
+    int K_fit;
+    if (use_fixed_bins_) {
+        // 固定使用前 fixed_bins_count_ 个频点进行拟合（避免不同采样率下频点数不一致）
+        K_fit = std::min(fixed_bins_count_, K);
+    } else {
+        // 按 max_fit_hz_ 截断：f_k = k·resample_hz/L，最大有效 k 满足 f_k ≤ max_fit_hz_
+        K_fit = K;
+        if (max_fit_hz_ > 0.0) {
+            int k_max = static_cast<int>(max_fit_hz_ * static_cast<double>(L) / resample_hz);
+            K_fit = std::min(k_max, K);
+        }
     }
     if (K_fit < 2) {
-        res.message = "too few bins below max_fit_hz for phase fitting";
+        res.message = "too few frequency bins for phase fitting";
         return res;
     }
     cv::Mat A_mat(K_fit, 2, CV_64F);

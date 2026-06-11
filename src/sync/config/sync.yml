@@ -3,9 +3,6 @@
 # 收集时长 (秒): 达到此时长后自动触发估计
 collect_seconds: 25.0
 
-# 重采样频率 (Hz): 两路信号统一插值到该频率网格
-resample_hz: 50.0
-
 # 时延搜索半宽 (ms): 只在 [-max_offset_ms, +max_offset_ms] 内找峰
 max_offset_ms: 50.0
 
@@ -23,14 +20,28 @@ min_samples: 200
 interp_method: linear
 
 # 估计算法选择:
-#   time_domain  — 时域互相关峰值搜索（默认，整数精度）
-#   freq_phase   — 频域互功率谱相位斜率拟合（连续精度，需要充足的频段信噪比）
-algo_method: freq_phase
+#   time_domain  — 时域互相关峰值搜索（整数精度，使用 coarse_resample_hz）
+#   freq_phase   — 频域互功率谱相位斜率拟合（连续精度，使用 fine_resample_hz）
+algo_method: time_domain
 
 # 频域方法是否在 FFT 前对信号加汉宁窗 (建议 true，抑制谱泄漏)
 apply_window: true
 
-# 频域拟合使用的最高物理频率上限 [Hz]
+# 频域拟合模式选择:
+#   fixed_bins      — 固定使用前 N 个频点进行拟合（避免不同采样率下频点数不一致）
+#   frequency_cutoff — 按物理频率截断，只使用低于 max_fit_hz 的频点
+freq_fit_mode: fixed_bins
+
+# 固定频点模式下的频点数量 (仅当 freq_fit_mode=fixed_bins 时生效)
+fixed_bins_count: 65
+
+# 频域拟合使用的最高物理频率上限 [Hz] (仅当 freq_fit_mode=frequency_cutoff 时生效)
 #   0.0  — 不限制，使用全部正频点（DC 和 Nyquist 除外）
 #   例：5.0 — 只用 0~5 Hz 的频点做相位斜率拟合（低频段信噪比通常更高）
 max_fit_hz: 2.0
+
+# 时域方法重采样频率 (Hz)
+coarse_resample_hz: 10000.0
+
+# 频域方法重采样频率 (Hz)
+fine_resample_hz: 200.0

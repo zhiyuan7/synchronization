@@ -39,6 +39,8 @@ private:
     // --- 参数 ---
     double collect_seconds_;
     double resample_hz_;
+    double coarse_resample_hz_;
+    double fine_resample_hz_;
     double max_offset_ms_;
     bool   detrend_;
     int    min_samples_;

@@ -17,6 +17,8 @@ SyncNode::SyncNode(const rclcpp::NodeOptions & options)
     // ---- 参数 ----
     collect_seconds_ = declare_parameter<double>("collect_seconds", 5.0);
     resample_hz_     = declare_parameter<double>("resample_hz", 100.0);
+    coarse_resample_hz_ = declare_parameter<double>("coarse_resample_hz", 500.0);
+    fine_resample_hz_   = declare_parameter<double>("fine_resample_hz", 50.0);
     max_offset_ms_   = declare_parameter<double>("max_offset_ms", 100.0);
     detrend_         = declare_parameter<bool>("detrend", true);
     min_samples_     = declare_parameter<int>("min_samples", 200);
@@ -25,12 +27,17 @@ SyncNode::SyncNode(const rclcpp::NodeOptions & options)
     std::string algo_str  = declare_parameter<std::string>("algo_method", "time_domain");
     bool   apply_window   = declare_parameter<bool>("apply_window", true);
     double max_fit_hz     = declare_parameter<double>("max_fit_hz", 0.0);
+    std::string freq_fit_mode = declare_parameter<std::string>("freq_fit_mode", "fixed_bins");
+    int fixed_bins_count = declare_parameter<int>("fixed_bins_count", 65);
 
     // ---- 算法实例（向 SyncManager 注入对应的算法核心）----
     if (algo_str == "freq_phase") {
+        // FreqDomain: 使用 fine_resample_hz
         calc_ = std::make_unique<SyncManager>(
-            std::make_unique<FreqDomainCalc>(apply_window, max_fit_hz), interp_method);
+            std::make_unique<FreqDomainCalc>(apply_window, max_fit_hz, freq_fit_mode, fixed_bins_count),
+            interp_method);
     } else {
+        // TimeDomain: 使用 coarse_resample_hz
         calc_ = std::make_unique<SyncManager>(
             std::make_unique<TimeDomainCalc>(), interp_method);
     }
@@ -127,9 +134,18 @@ void SyncNode::runEstimation()
         "[SyncNode] Trigger fired. Camera samples: %zu  IMU samples: %zu",
         t_cam_.size(), t_imu_.size());
 
+    // 根据算法类型选择重采样频率
+    std::string algo_str = get_parameter("algo_method").as_string();
+    double actual_resample_hz = resample_hz_;
+    if (algo_str == "time_domain") {
+        actual_resample_hz = coarse_resample_hz_;
+    } else if (algo_str == "freq_phase") {
+        actual_resample_hz = fine_resample_hz_;
+    }
+
     auto res = calc_->estimate(
         t_cam_, x_cam_, t_imu_, y_imu_,
-        resample_hz_, max_offset_ms_, detrend_, min_samples_
+        actual_resample_hz, max_offset_ms_, detrend_, min_samples_
     );
 
     // ---- 打印结果 ----

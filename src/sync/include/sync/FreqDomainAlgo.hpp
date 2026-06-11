@@ -12,7 +12,9 @@
 // ---------------------------------------------------------------------------
 class FreqDomainCalc : public CoreAlgoBase {
 public:
-    explicit FreqDomainCalc(bool apply_window = true, double max_fit_hz = 0.0);
+    explicit FreqDomainCalc(bool apply_window = true, double max_fit_hz = 0.0,
+                           const std::string& freq_fit_mode = "fixed_bins",
+                           int fixed_bins_count = 65);
 
     CoreResult compute(
         std::vector<double>& xn,
@@ -26,4 +28,6 @@ public:
 private:
     bool   apply_window_;
     double max_fit_hz_;   ///< 拟合使用的最高物理频率 [Hz]，≤0 表示不限制（使用所有正频点）
+    bool   use_fixed_bins_; ///< true: use fixed bins; false: use max_fit_hz cutoff
+    int    fixed_bins_count_; ///< number of bins to use when use_fixed_bins_ is true
 };

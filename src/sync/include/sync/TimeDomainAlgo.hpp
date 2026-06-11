@@ -7,6 +7,8 @@
 // ---------------------------------------------------------------------------
 class TimeDomainCalc : public CoreAlgoBase {
 public:
+    TimeDomainCalc() = default;
+
     CoreResult compute(
         std::vector<double>& xn,
         std::vector<double>& yn,

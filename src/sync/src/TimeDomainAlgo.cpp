@@ -66,8 +66,7 @@ CoreResult TimeDomainCalc::compute(
         return res;
     }
 
-    // --- 2. 互相关 R_xy[m] = (1/cnt)·Σ_n x[n]·y[n+m]，|m|≤M ---
-    // M 为对应 max_offset_ms 的最大延迟采样数
+    // --- 2. 计算互相关 ---
     int M = static_cast<int>(max_offset_ms * resample_hz / 1000.0);
     M = std::min(M, N - 1);
 
@@ -85,7 +84,7 @@ CoreResult TimeDomainCalc::compute(
         xcorr[mi + M] = (cnt > 0) ? (s / cnt) : 0.0;
     }
 
-    // --- 3. 寻找 |R_xy[m]| 的峰值 ---
+    // --- 3. 找峰值 ---
     int    peak_idx = 0;
     double peak_abs = 0.0;
     for (int i = 0; i < static_cast<int>(xcorr.size()); ++i) {
@@ -95,7 +94,7 @@ CoreResult TimeDomainCalc::compute(
         }
     }
 
-    // 峰值锐利度：|峰值| / 旁瓣均方根（排除峰值周围 ±2 个点）
+    // --- 4. 计算旁瓣均方根 ---
     double sq_side  = 0.0;
     int    cnt_side = 0;
     for (int i = 0; i < static_cast<int>(xcorr.size()); ++i) {
@@ -106,10 +105,11 @@ CoreResult TimeDomainCalc::compute(
     }
     double rms_side = (cnt_side > 0) ? std::sqrt(sq_side / cnt_side) : 1.0;
 
-    res.tau          = (double)(peak_idx - M) / resample_hz;
-    res.peak_value   = xcorr[peak_idx];
-    res.peak_ratio   = (rms_side > 1e-12) ? peak_abs / rms_side : 0.0;
-    res.valid        = true;
-    res.message      = "ok";
+    // --- 5. 输出结果 ---
+    res.tau        = static_cast<double>(peak_idx - M) / resample_hz;
+    res.peak_value = xcorr[peak_idx];
+    res.peak_ratio = (rms_side > 1e-12) ? peak_abs / rms_side : 0.0;
+    res.valid      = true;
+    res.message    = "ok";
     return res;
 }
